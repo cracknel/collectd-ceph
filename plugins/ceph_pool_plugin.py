@@ -36,6 +36,7 @@ import subprocess
 
 import base
 
+
 class CephPoolPlugin(base.Base):
 
     def __init__(self):
@@ -45,7 +46,7 @@ class CephPoolPlugin(base.Base):
     def get_stats(self):
         """Retrieves stats from ceph pools"""
 
-        ceph_cluster = "%s-%s" % (self.prefix, self.cluster)
+        ceph_cluster = "cluster_utilization"
 
         data = { ceph_cluster: {} }
 
@@ -54,7 +55,7 @@ class CephPoolPlugin(base.Base):
             osd_pool_cmdline='ceph osd pool stats -f json --cluster ' + self.cluster
             stats_output = subprocess.check_output(osd_pool_cmdline, shell=True)
             cephdf_cmdline='ceph df -f json --cluster ' + self.cluster 
-            df_output = subprocess.check_output(ceph_dfcmdline, shell=True)
+            df_output = subprocess.check_output(cephdf_cmdline, shell=True)
         except Exception as exc:
             collectd.error("ceph-pool: failed to ceph pool stats :: %s :: %s"
                     % (exc, traceback.format_exc()))
@@ -90,11 +91,27 @@ class CephPoolPlugin(base.Base):
             data[ceph_cluster]['cluster']['total_space'] = int(json_df_data['stats']['total_bytes'])
             data[ceph_cluster]['cluster']['total_used'] = int(json_df_data['stats']['total_used_bytes'])
             data[ceph_cluster]['cluster']['total_avail'] = int(json_df_data['stats']['total_avail_bytes'])
+            data[ceph_cluster]['cluster']['percent_used'] = (
+                                                                int(
+                                                                    json_df_data['stats']['total_used_bytes']
+                                                                ) * 100 / (
+                                                                    int(json_df_data['stats']['total_bytes'])
+                                                                    * 1.0
+                                                                )
+                                                            )
         else:
             # ceph < 0.84
             data[ceph_cluster]['cluster']['total_space'] = int(json_df_data['stats']['total_space']) * 1024.0
             data[ceph_cluster]['cluster']['total_used'] = int(json_df_data['stats']['total_used']) * 1024.0
             data[ceph_cluster]['cluster']['total_avail'] = int(json_df_data['stats']['total_avail']) * 1024.0
+            data[ceph_cluster]['cluster']['percent_used'] = (
+                                                                int(
+                                                                    json_df_data['stats']['total_used_bytes']
+                                                                ) * 100 / (
+                                                                    int(json_df_data['stats']['total_bytes'])
+                                                                    * 1.0
+                                                                )
+                                                            )
 
         return data
 
