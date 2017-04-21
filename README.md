@@ -77,6 +77,7 @@ should follow something similar to:
 <Plugin "python">
     ModulePath "/usr/lib/collectd/plugins/ceph"
 
+    Import "getsigchld"
     Import "ceph_pool_plugin"
 
     <Module "ceph_pool_plugin">
